@@ -1,0 +1,62 @@
+==============================================================================
+CLAIM: core/standing/evaluator.py :: determine() -- unmodified, as shipped
+==============================================================================
+
+FREEZE: one StandingContext, built once, referenced by identity (id()) in
+every run below -- never rebuilt, never re-parameterized.
+
+Frozen object id: 134180075717456
+Frozen ctx: StandingContext(assessment_id='ASSESS-TERRY-01', payload={'applicant': 'example'}, state={'stage': 'review'}, rules=({'rule_id': 'R-KYC-1', 'depends_on': [{'condition_id': 'kyc_check', 'source_kind': 'external_authoritative'}]},), dependencies=({'condition_id': 'kyc_check', 'status': 'VALID', 'value_digest': 'sha256:abc123', 'valid_from': '2026-09-24T00:00:00+00:00', 'valid_until': '2026-09-24T12:00:00+00:00'},), evidence={}, authority='AUTHORITY-1', purpose='ORG-001', topology_integrity=True)
+predicate_vector=(True,)  runtime_verdict='APPROVE'
+
+DECLARED CONDITIONS (stated before running):
+  - one rule, requiring one external_authoritative dependency 'kyc_check'
+  - that dependency is VALID, with a value_digest, valid until 2026-09-24T12:00:00+00:00
+  - CONDITION A: 'now' = 2026-09-24T06:00:00+00:00  (before valid_until)
+  - CONDITION B: 'now' = 2026-09-25T00:00:00+00:00  (after valid_until)
+  - Nothing else differs between A and B. Same ctx object. Same rule. Same
+    predicate_vector. Same runtime_verdict. Same mechanism. Same code.
+
+------------------------------------------------------------------------------
+RUN 1 -- CONDITION A (now before valid_until)
+------------------------------------------------------------------------------
+StandingResult(assessment_id='ASSESS-TERRY-01', state='ADMISSIBLE', reason='ALL_GOVERNED_CONDITIONS_SATISFIED', fresh=True, material_digest='2d980340c4631b9b317ff22874b8feaaac2f05cf25fb0a540df8bf488ef206b5', material_valid_until='2026-09-24T12:00:00+00:00', external_material_ids=('kyc_check',))
+RECEIPT (sha256 of result): 0c663c9a3a316c7e621a0d6d8be88e7e51abe4f9396fbbb1f2ab967704a1ab8f
+
+------------------------------------------------------------------------------
+CHANGE ONE MATERIAL CONDITION: advance 'now' past the dependency's own
+declared valid_until. Mechanism untouched. Rules untouched. ctx object
+untouched (same id()). Only the current time changes.
+------------------------------------------------------------------------------
+Frozen object id (same as above): 134180075717456
+
+------------------------------------------------------------------------------
+RUN 2 -- CONDITION B (now after valid_until), SAME frozen ctx object
+------------------------------------------------------------------------------
+StandingResult(assessment_id='ASSESS-TERRY-01', state='REASSESSMENT_REQUIRED', reason='TAUSTANDING_MATERIAL_EXPIRED', fresh=False, material_digest='2d980340c4631b9b317ff22874b8feaaac2f05cf25fb0a540df8bf488ef206b5', material_valid_until=None, external_material_ids=())
+RECEIPT (sha256 of result): a355a9de0dc222c771e331d908689bb2a9c23837d6c636239a6f075bb1f6fb96
+
+==============================================================================
+REPLAY / REPRODUCE: re-run both conditions again, same frozen object
+==============================================================================
+Condition A replay match : True  (0c663c9a3a316c7e... == 0c663c9a3a316c7e...)
+Condition B replay match : True  (a355a9de0dc222c7... == a355a9de0dc222c7...)
+A result != B result     : True
+
+==============================================================================
+FINAL LEDGER (verbatim, no relabeling)
+==============================================================================
+CONDITION A (before valid_until):
+  state    = ADMISSIBLE
+  reason   = ALL_GOVERNED_CONDITIONS_SATISFIED
+  fresh    = True
+  material_digest = 2d980340c4631b9b317ff22874b8feaaac2f05cf25fb0a540df8bf488ef206b5
+  receipt(sha256) = 0c663c9a3a316c7e621a0d6d8be88e7e51abe4f9396fbbb1f2ab967704a1ab8f
+
+CONDITION B (after valid_until):
+  state    = REASSESSMENT_REQUIRED
+  reason   = TAUSTANDING_MATERIAL_EXPIRED
+  fresh    = False
+  material_digest = 2d980340c4631b9b317ff22874b8feaaac2f05cf25fb0a540df8bf488ef206b5
+  receipt(sha256) = a355a9de0dc222c771e331d908689bb2a9c23837d6c636239a6f075bb1f6fb96
+
